@@ -1,0 +1,42 @@
+# Render Blueprint: Django API + free PostgreSQL.
+# Deploy: Render dashboard → New → Blueprint → select this repository.
+databases:
+  - name: eld-trip-planner-db
+    plan: free
+    databaseName: eld_trip_planner
+    user: eld_trip_planner
+
+services:
+  - type: web
+    name: eld-trip-planner-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    healthCheckPath: /api/health/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: DATABASE_URL
+        fromDatabase:
+          name: eld-trip-planner-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      # Set to your Vercel URL after the frontend is deployed, e.g. https://eld-trip-planner.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CORS_ALLOWED_ORIGIN_REGEXES
+        value: ^https://.*\.vercel\.app$
+      # Identify your app to OpenStreetMap services (repo URL or email). Placeholders are blocked.
+      - key: HTTP_USER_AGENT
+        sync: false
+      - key: ROUTING_PROVIDER
+        value: osrm
+      - key: ROUTING_API_KEY
+        sync: false
